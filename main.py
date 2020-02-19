@@ -9,15 +9,36 @@ from torch import nn
 from torch.utils.data import Dataset, DataLoader  
 import csv
 import pickle
+from sklearn.model_selection import train_test_split
+import argparse
+
+pd.set_option('display.max_rows', 1000)
 
 def read_data():
-    data = pd.read_excel('smaorter-2015_ver2.xlsx', skiprows=list(range(9)), usecols=list(range(4, 10)))
-    data2 = pd.read_excel('tatorter-2015.xlsx', skiprows=list(range(10)), usecols=list(range(4, 20)))
+    print('Importing Excel data')
+    smaort_excel = pd.read_excel('smaorter-2015_ver2.xlsx', skiprows=list(range(9)), usecols=list(range(4, 10)))
+    tatort_excel = pd.read_excel('tatorter-2015.xlsx', skiprows=list(range(10)), usecols=list(range(4, 20)))
 
-    data.drop_duplicates(subset='Distriktsnamn', inplace=True)
+    smaort_excel['Label'] = ['smaort' for item in smaort_excel.iterrows()]
+    tatort_excel['Label'] = ['tatort' for item in tatort_excel.iterrows()]
 
-    smaort = list(data.Distriktsnamn.unique())
-    tatort = list(data2.Tätortsbeteckning.unique())
+    tatort_excel.rename(columns = {'Tätortsbeteckning': 'Distriktsnamn'}, inplace=True)
+
+    bert = pd.concat([smaort_excel, tatort_excel])
+
+    bert.drop_duplicates(subset='Distriktsnamn', inplace=True)
+    bert = bert[['Distriktsnamn', 'Label']]
+
+    train_df, test_df = train_test_split(bert.sample(frac=1), test_size=0.2)
+
+    smaort = list(smaort_excel.Distriktsnamn.unique())
+    tatort = list(tatort_excel.Distriktsnamn.unique())
+
+    smaort_train = [o for o in smaort if (train_df['Distriktsnamn']==o).any()]
+    tatort_train = [t for t in tatort if (train_df['Distriktsnamn']==t).any()]
+
+    smaort_test = [o for o in smaort if (test_df['Distriktsnamn']==o).any()]
+    tatort_test = [t for t in tatort if (test_df['Distriktsnamn']==t).any()]
 
     sma_by = list(filter(lambda x: 'by' in x, smaort))
     sma_stad = list(filter(lambda x: 'stad' in x, smaort))
@@ -31,20 +52,19 @@ def read_data():
     print('Antal byar i grupp tätort: {}'.format(len(tat_by)))
     print('Antal städer i grupp tätort: {}'.format(len(tat_stad)))
     
-    with open('smaort.pkl', 'wb') as f:
-            pickle.dump(smaort, f)
+    with open('smaort_test.pkl', 'wb') as f:
+            pickle.dump(smaort_test, f)
 
-    with open('tatort.pkl', 'wb') as f:
-            pickle.dump(tatort, f)
+    with open('tatort_test.pkl', 'wb') as f:
+            pickle.dump(tatort_test, f)
 
-    return data, data2, smaort, tatort
+    return smaort_excel, tatort_excel, bert, smaort_train, tatort_train
 
-def get_vocab(dataframes, column_names):
+def get_vocab(dataframe, column_name):
     vocab = set()
-    for column_name, dataframe in zip(column_names, dataframes):
-        for idx, row in dataframe.iterrows():
-            s = row[column_name]
-            vocab.update(s)
+    for idx, row in dataframe.iterrows():
+        s = row[column_name]
+        vocab.update(s)
     vocab_size = len(vocab)
     print('Vocab size:', vocab_size)
     return vocab, vocab_size
@@ -66,6 +86,7 @@ class OrtLoader():
                     encoded.append(torch.Tensor(intort))
                 except:
                     pass
+            print(encoded)
             return encoded
 
         x_padded = pad_sequence(ort2int(total), batch_first=True, padding_value=0)
@@ -84,15 +105,20 @@ class OrtLoader():
 def train_model():
     model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, pretrained=False)
     trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
-    print('Saving trained model to trained_batch32_epoch20')
-    #torch.save(trained_model, 'trained_batch32_epoch20')
 
 if __name__ == '__main__':
-    dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
-    data, data2, smaort, tatort = read_data()
-    vocab, vocab_size = get_vocab([data, data2], ['Distriktsnamn', 'Tätortsbeteckning'])
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--modelfile', type=str, default="trained_model",
+                    help='The name of the file you wish to save the trained model to.')
 
-    dataset = OrtLoader(smaort, tatort, vocab)
+    args = parser.parse_args()
+
+    dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
+    smaort_excel, tatort_excel, bert, smaort_train, tatort_train = read_data()
+    vocab, vocab_size = get_vocab(bert, 'Distriktsnamn')
+
+    print(smaort_train)
+    dataset = OrtLoader(smaort_train, tatort_train, vocab)
     train_loader = DataLoader(dataset=dataset, batch_size=32, shuffle=True, num_workers=0)
 
     print('Saving dataset to dataset.pkl')
@@ -101,6 +127,7 @@ if __name__ == '__main__':
 
     model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, pretrained=False)
     trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
-    filename = 'trained_batch32_epoch20'
+    filename = args.modelfile
+    #filename = 'trained_batch32_epoch20'
     print('Saving model to {}'.format(filename))
     torch.save(trained_model, filename)
