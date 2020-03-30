@@ -2,25 +2,29 @@ import numpy as np
 import torch
 
 class OrtLoader():
-    #def __init__(self, smaort, tatort, vocab, max_len, dev):
-    def __init__(self, smaort, tatort, vocab, max_len, dev, sammansattningar=None, orter=None):
-        if sammansattningar == None:
+    def __init__(self, smaort, tatort, vocab, max_len, dev, orter=None):
+        if orter == None:
             total = smaort + tatort
-        if sammansattningar != None:
-            total = sammansattningar
+        if orter != None:
+            total = orter.keys()
+
+        if orter == None:
+            total = smaort + tatort
+        if orter != None:
+            total = orter.values()
 
         self.dev = dev
         self.max_len = max_len
         self.vocab = vocab
-        char2int = {t:n for n, t in enumerate(vocab)}
-        #total = smaort + tatort
+        self.char2int = {t:n for n, t in enumerate(vocab)}
+
         self.len = len(total)
 
         def ort2int(total):   
             encoded = []         
             for i, ort in enumerate(total):
                 try:
-                    intort = [char2int[t] for t in ort]
+                    intort = [self.char2int[t] for t in ort]
                     encoded.append(intort)
                 except:
                     pass
@@ -28,6 +32,7 @@ class OrtLoader():
 
         encoded = ort2int(total)
 
+        print('Padding vectors up to max len: {}'.format(max_len))
         x_padded = []
         for ort in encoded:
             seq = np.zeros(self.max_len)
