@@ -1,6 +1,7 @@
 # Place name classifier
 
 This is a silly binary place name classifier, trained to distinguish a "tätort" from "småort".
+Please see the excel_data folder for reference. This data was fetched from [Statistiska centralbyråns website](https://www.scb.se) in December 2019.
 
 ## Instructions
 
