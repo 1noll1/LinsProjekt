@@ -45,7 +45,7 @@ class OrtLoader():
         self.input_size = len(x_padded[0])
 
         self.X_tensors = [torch.LongTensor(seq) for seq in x_padded]
-        self.y_tensors = torch.LongTensor([0 if ort in smaort else 1 for ort in total])
+        self.y_tensors = torch.FloatTensor([0 if ort in smaort else 1 for ort in total])
 
     def __len__(self):
         return self.len

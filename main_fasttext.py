@@ -7,8 +7,6 @@ from GRU_model import GRUclassifier
 from torch import optim
 from torch import nn
 from torch.utils.data import Dataset, DataLoader  
-import csv
-import ast
 import pickle
 from read_data import read_data
 from sklearn.model_selection import train_test_split
@@ -25,14 +23,12 @@ def get_vocab(sammansattningar):
     print('Vocab size:', vocab_size)
     return vocab, vocab_size
 
-def load_vectors():
-    vectors = pd.read_csv('fastText_vectors.csv', names=['Word', 'Vector'])
-
+def load_compounds():
     with open('sammansattningar.pkl', 'rb') as f:
         orter = pickle.load(f)
 
     for k in orter:
-        # remove spaces
+        # remove spaces from the compounds
         orter[k] = [filter(None, s.split(' ')) for s in orter[k]]
         orter[k] = list(map(lambda x: [str(c) for c in x], orter[k]))[0]
 
@@ -54,7 +50,7 @@ if __name__ == '__main__':
     dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
 
     _, _, total, smaort_train, tatort_train = read_data()
-    sammansattningar, orter = load_vectors()
+    sammansattningar, orter = load_compounds()
     vocab, vocab_size = get_vocab(sammansattningar)
     max_len = max(map(lambda x: len(x), orter.values()))
 
@@ -75,10 +71,10 @@ if __name__ == '__main__':
         weights = torch.FloatTensor([i for i in list(int2vec.values())])
 
         print('weights:', weights.shape)
-        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, weights)
+        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, weights)
 
     if args.pretrained == False:
-        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, args.pretrained)
+        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, args.pretrained)
 
     datapath = 'datasets/' + args.dataset
     print('Saving dataset to {}'.format(datapath))
@@ -88,11 +84,5 @@ if __name__ == '__main__':
     trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
 
     filepath = 'trained_models/' + args.modelfile
-    #print('Saving model to {}'.format(filename))
     print('Saving model to {}'.format(filepath))
-    #torch.save(trained_model, filename)
     torch.save(trained_model, filepath)
-
-    # filename = args.modelfile
-    # print('Saving model to {}'.format(filename))
-    # torch.save(trained_model, filename)

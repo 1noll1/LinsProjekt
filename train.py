@@ -4,7 +4,8 @@ from torch import optim
 
 def trained_batches(model, num_epochs, dev, train_loader, loss_mode=1):
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    criterion = nn.NLLLoss()
+    criterion = nn.BCELoss()
+    #criterion = nn.CrossEntropyLoss()
     model = model.to(dev)
     model.set_dev(dev)
 
@@ -13,6 +14,7 @@ def trained_batches(model, num_epochs, dev, train_loader, loss_mode=1):
         print('starting epoch...')
         for i, data in enumerate(train_loader, 0):
             inputs, labels = data
+            #print('in shape:', inputs.shape, 'label shape:', labels.shape)
             y_pred = model(inputs)
             loss = criterion(y_pred, labels)
             losses.append(loss.item())

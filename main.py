@@ -21,10 +21,6 @@ def get_vocab(dataframe, column_name):
     print('Vocab size:', vocab_size)
     return vocab, vocab_size
 
-# def train_model(pretrained):
-#     model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, pretrained=False)
-#     trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train a place name classifier.')
     parser.add_argument('--modelfile', type=str, default="trained_model",
@@ -41,7 +37,6 @@ if __name__ == '__main__':
     smaort_excel, tatort_excel, concat_df, smaort_train, tatort_train = read_data()
     vocab, vocab_size = get_vocab(concat_df, 'Distriktsnamn')
     max_len = max(map(lambda x: len(x), concat_df['Distriktsnamn']))
-    print('Max len:', max_len)
 
     dataset = OrtLoader(smaort_train, tatort_train, vocab, max_len, dev, orter=None)
     train_loader = DataLoader(dataset=dataset, batch_size=32, shuffle=True, num_workers=0)
@@ -51,11 +46,8 @@ if __name__ == '__main__':
     with open(datapath, 'wb') as f:
         pickle.dump(dataset, f)
 
-    model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 2, dev, args.pretrained)
-    trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
-    #filename = args.modelfile
+    model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, args.pretrained)
+    trained_model = trained_batches(model, 20, dev, train_loader=train_loader)
     filepath = 'trained_models/' + args.modelfile
-    #print('Saving model to {}'.format(filename))
     print('Saving model to {}'.format(filepath))
-    #torch.save(trained_model, filename)
     torch.save(trained_model, filepath)
