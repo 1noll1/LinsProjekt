@@ -26,12 +26,13 @@ if __name__ == '__main__':
                     help='The name of the file you wish to save the trained model to.')
     parser.add_argument('--dataset', type=str, default='default_dataset',
                     help='Path you wish to save the dataset to.')
-    parser.add_argument('--pretrained', type=bool, default=False,
-                    help='Whether or not to use pretrained weights.')
+    parser.add_argument('--epochs', type=int, default=20,
+                    help='Number of epochs you wish to train the model for.')
 
     args = parser.parse_args()
 
     dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
+    np.random.seed(42)
     
     smaort_excel, tatort_excel, concat_df, smaort_train, tatort_train = read_data()
     vocab, vocab_size = get_vocab(concat_df, 'Distriktsnamn')
@@ -45,8 +46,8 @@ if __name__ == '__main__':
     with open(datapath, 'wb') as f:
         pickle.dump(dataset, f)
 
-    model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, args.pretrained)
-    trained_model = trained_batches(model, 20, dev, train_loader=train_loader)
+    model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, None)
+    trained_model = trained_batches(model, args.epochs, dev, train_loader=train_loader)
     filepath = 'trained_models/' + args.modelfile
     print('Saving model to {}'.format(filepath))
     torch.save(trained_model, filepath)

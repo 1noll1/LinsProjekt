@@ -50,7 +50,9 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='fastText_dataset',
                     help='Path you wish to save the dataset to.')
     parser.add_argument('--pretrained', type=bool, default=False,
-                    help='Whether or not to use pretrained weights.')
+                    help='Whether or not to use pretrained fastText weights.')
+    parser.add_argument('--epochs', type=int, default=20,
+                    help='Number of epochs you wish to train the model for.')
 
     args = parser.parse_args()
 
@@ -82,14 +84,14 @@ if __name__ == '__main__':
         model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, weights)
 
     if args.pretrained == False:
-        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, args.pretrained)
+        model = GRUclassifier(vocab_size, len(dataset.X_tensors[0]), 50, 1, dev, None)
 
     datapath = 'datasets/' + args.dataset
     print('Saving dataset to {}'.format(datapath))
     with open(datapath, 'wb') as f:
         pickle.dump(dataset, f)
 
-    trained_model = trained_batches(model, 20, dev, train_loader=train_loader)
+    trained_model = trained_batches(model, args.epochs, dev, train_loader=train_loader)
 
     filepath = 'trained_models/' + args.modelfile
     print('Saving model to {}'.format(filepath))
