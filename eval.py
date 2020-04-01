@@ -13,10 +13,15 @@ def model_eval(model, test_loader):
     with torch.no_grad():
         print('Initialising evaluation')
         for ort, label in test_loader:
+            #print('true:', label)
             true.extend([label])
             ort = ort.unsqueeze(0)
-            out = model(ort)
-            _, predicted = torch.max(out.data, 1)
+            #out = model(ort)
+            predicted = model(ort)
+            #print(predicted.shape)
+            predicted = np.round(predicted)
+            #_, predicted = torch.max(out.data, 1)
+            #print('predicted', predicted)
             predicted = predicted.to('cpu')
             pred.extend(predicted)
 
@@ -56,8 +61,10 @@ if __name__ == '__main__':
     trained = torch.load(args.modelfile)
 
     if args.modelfile == 'trained_models/trained_model':
+        print(len(tatort), len(smaort))
         test_data = OrtLoader(smaort, tatort, vocab, max_len, dev, orter=None)
-    elif args.modelfile == 'trained_models/fastText_trained_model':
+    if args.modelfile == 'trained_models/fastText_trained_model':
+        print(len(tatort), len(smaort))
         with open('sammansattningar.pkl', 'rb') as f:
             ss = pickle.load(f)
         test_data = OrtLoader(smaort, tatort, vocab, max_len, dev, orter=ss)

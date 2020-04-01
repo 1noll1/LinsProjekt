@@ -3,10 +3,6 @@ import torch
 
 class OrtLoader():
     def __init__(self, smaort, tatort, vocab, max_len, dev, orter=None):
-        if orter == None:
-            total = smaort + tatort
-        if orter != None:
-            total = orter.keys()
 
         if orter == None:
             total = smaort + tatort
@@ -45,7 +41,10 @@ class OrtLoader():
         self.input_size = len(x_padded[0])
 
         self.X_tensors = [torch.LongTensor(seq) for seq in x_padded]
-        self.y_tensors = torch.FloatTensor([0 if ort in smaort else 1 for ort in total])
+        if orter == None:
+            self.y_tensors = torch.FloatTensor([0 if ort in smaort else 1 for ort in total])
+        if orter != None:
+            self.y_tensors = torch.FloatTensor([0 if ort in smaort else 1 for ort in orter.keys()])
 
     def __len__(self):
         return self.len

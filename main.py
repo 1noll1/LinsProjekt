@@ -7,7 +7,6 @@ from torch import optim
 from torch import nn
 from OrtLoader import OrtLoader
 from torch.utils.data import Dataset, DataLoader  
-import csv
 import pickle
 import argparse
 from read_data import read_data

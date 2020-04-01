@@ -1,19 +1,16 @@
 import pandas as pd
 import torch
 import numpy as np
-from torch.nn.utils.rnn import pad_sequence
 from train import trained_batches
 from GRU_model import GRUclassifier
 from torch import optim
 from torch import nn
+from OrtLoader import OrtLoader
 from torch.utils.data import Dataset, DataLoader  
 import pickle
-from read_data import read_data
-from sklearn.model_selection import train_test_split
 import argparse
-from OrtLoader import OrtLoader
-
-dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
+from read_data import read_data
+from collections.abc import Iterable
 
 def get_vocab(sammansattningar):
     vocab = set()
@@ -23,6 +20,15 @@ def get_vocab(sammansattningar):
     print('Vocab size:', vocab_size)
     return vocab, vocab_size
 
+def flatten(l):
+    # this function was written by user Cristian on stackoverflow.
+    # https://stackoverflow.com/a/2158532
+    for el in l:
+        if isinstance(el, Iterable) and not isinstance(el, (str, bytes)):
+            yield from flatten(el)
+        else:
+            yield el
+
 def load_compounds():
     with open('sammansattningar.pkl', 'rb') as f:
         orter = pickle.load(f)
@@ -30,7 +36,8 @@ def load_compounds():
     for k in orter:
         # remove spaces from the compounds
         orter[k] = [filter(None, s.split(' ')) for s in orter[k]]
-        orter[k] = list(map(lambda x: [str(c) for c in x], orter[k]))[0]
+        orter[k] = list(map(lambda x: [str(c) for c in x], orter[k]))
+        orter[k] = list(flatten(orter[k]))
 
     sammansattningar = orter.values()
 
@@ -48,6 +55,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dev = torch.device("cuda:{}".format(hash('gusstrlip') % 4) if torch.cuda.is_available() else "cpu")
+    np.random.seed(42)
 
     _, _, total, smaort_train, tatort_train = read_data()
     sammansattningar, orter = load_compounds()
@@ -81,7 +89,7 @@ if __name__ == '__main__':
     with open(datapath, 'wb') as f:
         pickle.dump(dataset, f)
 
-    trained_model = trained_batches(model, 20, dev, train_loader=train_loader, loss_mode=1)
+    trained_model = trained_batches(model, 20, dev, train_loader=train_loader)
 
     filepath = 'trained_models/' + args.modelfile
     print('Saving model to {}'.format(filepath))
