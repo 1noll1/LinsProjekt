@@ -13,3 +13,6 @@ This script also scrapes Wikipedia for relevant place name suffixes for the comp
 3. Running `main.py` with no additional arguments trains the GRU on a character level.
 Running `main_fasttext.py` with no additional arguments trains the GRU on the compounds instead. Running `main_fasttext.py`
 with `--pretrained True` should load the pretrained fasttext vectors – in theory.
+4. If you run `eval.py` without arguments, the `trained_model` trained in `main.py` will be evaluated by default. If you wish to evaluate the fastText model, please run `eval.py --modelfile fastText_trained_model --dataset fastText_dataset`.
+
+*Nota bene: You will also need the fastText .bin and .vec files for Swedish which are too large to upload to this repo. You can find them here: https://fasttext.cc/docs/en/crawl-vectors.html*
